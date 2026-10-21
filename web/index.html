@@ -4,6 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>News Pulse</title>
+  <!-- "server" when served by the app; scripts/build-site.mjs sets "static" for the read-only public site. -->
+  <meta name="news-pulse-mode" content="server" />
   <style>
     :root {
       --bg: #f6f7f9; --card: #ffffff; --text: #16191d; --muted: #5d6670; --line: #e3e6ea;
@@ -18,6 +20,7 @@
       }
     }
     * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
     body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
     main { max-width: 760px; margin: 0 auto; padding: 32px 16px 48px; }
     header h1 { margin: 0; font-size: 1.5rem; letter-spacing: -0.01em; }
@@ -53,6 +56,7 @@
     .check { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--line); }
     .check > h2 { font-size: 1.1rem; }
     .hint { margin: 4px 0 12px; color: var(--muted); font-size: 0.875rem; }
+    .hint a { color: var(--accent); }
     .check-form { display: flex; gap: 8px; }
     .check-form input { flex: 1; min-width: 0; font: inherit; font-size: 0.9rem; color: var(--text); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
     .check-form button:disabled { opacity: 0.6; cursor: wait; }
@@ -138,7 +142,16 @@
     dayInput.max = isoDay(today);
     dayInput.min = isoDay(new Date(today.getFullYear(), today.getMonth(), today.getDate() - MAX_DAYS_BACK));
 
-    let day = new URLSearchParams(location.search).get("day") || "";
+    // On the public site there is no server: the page reads data/top3.json, published by a
+    // scheduled job, and the features that spend AI usage (pick a day, check a link) are hidden.
+    const STATIC = document.querySelector('meta[name="news-pulse-mode"]')?.content === "static";
+    if (STATIC) {
+      document.querySelector(".controls").hidden = true;
+      document.querySelector(".check").innerHTML =
+        `<p class="hint">This public page is read-only and updates every 2 hours. To pick a day or check a link yourself, run News Pulse from <a href="https://github.com/chew88999/news-pulse">its GitHub repository</a>.</p>`;
+    }
+
+    let day = STATIC ? "" : new URLSearchParams(location.search).get("day") || "";
     let pollTimer;
     let requestId = 0;
 
@@ -146,7 +159,7 @@
       day = value;
       dayInput.value = day;
       latestBtn.setAttribute("aria-pressed", String(!day));
-      history.replaceState(null, "", day ? `?day=${day}` : location.pathname);
+      if (!STATIC) history.replaceState(null, "", day ? `?day=${day}` : location.pathname);
       load();
     }
     dayInput.addEventListener("change", () => setDay(dayInput.value));
@@ -172,7 +185,11 @@
       clearTimeout(pollTimer);
       const id = ++requestId; // ignore answers for a day the user has already left
       try {
-        const res = await fetch(`/api/top3${day ? `?day=${day}` : ""}`);
+        const res = await fetch(STATIC ? "data/top3.json" : `/api/top3${day ? `?day=${day}` : ""}`, STATIC ? { cache: "no-cache" } : undefined);
+        if (STATIC && !res.ok) {
+          showState("No news has been published yet. Check back after the next update.");
+          return;
+        }
         const data = await res.json();
         if (id !== requestId) return;
         updated.textContent = data.window ? `News from ${data.window}` : "Top three defence and technology stories for IT and engineering staff";

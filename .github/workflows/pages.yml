@@ -1,0 +1,97 @@
+# Publishes the read-only public News Pulse page to GitHub Pages.
+#
+# On the schedule (and when run by hand) it starts OpenCode on the runner, runs the same
+# collect → validate → rank pipeline as `npm run refresh`, and publishes the result.
+# On a code push it only republishes the page with the stories already online, so no
+# OpenCode Go usage is spent.
+#
+# Needs the repository secret OPENCODE_GO_API_KEY. Optional repository variable
+# OPENCODE_MODEL (default opencode-go/glm-5.3-flash).
+name: Publish public page
+
+on:
+  schedule:
+    - cron: "15 */2 * * *" # every 2 hours
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["web/**", "scripts/build-site.mjs", ".github/workflows/pages.yml"]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      HAS_KEY: ${{ secrets.OPENCODE_GO_API_KEY != '' }}
+      REFRESH: ${{ github.event_name != 'push' }}
+      OPENCODE_MODEL: ${{ vars.OPENCODE_MODEL || 'opencode-go/glm-5.3-flash' }}
+      OPENCODE_URL: http://127.0.0.1:4096
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Keep the stories already online (used if this refresh fails)
+        run: |
+          mkdir -p data
+          curl -fsSL "${{ steps.pages.outputs.base_url }}/data/top3.json" -o data/top3.json || rm -f data/top3.json
+
+      - name: Start OpenCode
+        if: env.REFRESH == 'true' && env.HAS_KEY == 'true'
+        env:
+          OPENCODE_GO_API_KEY: ${{ secrets.OPENCODE_GO_API_KEY }}
+        run: |
+          npm install -g opencode-ai@1.19.3
+          password="$(openssl rand -hex 24)"
+          echo "::add-mask::$password"
+          echo "OPENCODE_SERVER_PASSWORD=$password" >> "$GITHUB_ENV"
+          OPENCODE_SERVER_PASSWORD="$password" nohup opencode serve --hostname 127.0.0.1 --port 4096 > opencode.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -s -o /dev/null -w '%{http_code}' "$OPENCODE_URL/config" | grep -q 401; then echo "OpenCode is up"; exit 0; fi
+            sleep 1
+          done
+          echo "OpenCode did not start"; cat opencode.log; exit 1
+
+      - name: Refresh the top three
+        if: env.REFRESH == 'true' && env.HAS_KEY == 'true'
+        continue-on-error: true
+        env:
+          OPENCODE_GO_API_KEY: ${{ secrets.OPENCODE_GO_API_KEY }}
+        run: npm run refresh
+
+      - name: Note a missing key
+        if: env.REFRESH == 'true' && env.HAS_KEY != 'true'
+        run: echo "::warning::OPENCODE_GO_API_KEY is not set, so the stories were not refreshed. Add it under Settings → Secrets and variables → Actions."
+
+      - run: node scripts/build-site.mjs
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

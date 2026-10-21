@@ -10,6 +10,7 @@
     "start": "node --env-file-if-exists=.env --import tsx server/index.ts",
     "collect": "node --env-file-if-exists=.env --import tsx server/cli.ts collect",
     "refresh": "node --env-file-if-exists=.env --import tsx server/cli.ts refresh",
+    "build-site": "node scripts/build-site.mjs",
     "selftest": "node --env-file-if-exists=.env --import tsx server/selftest/run.ts",
     "typecheck": "tsc --noEmit"
   },

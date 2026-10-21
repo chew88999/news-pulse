@@ -2,6 +2,17 @@
 
 Shows IT and engineering staff the three defence and technology news items that matter, each with a short summary, its source and a check on whether it is factual. See `PRODUCT_BRIEF.md` for the why.
 
+**Public page:** https://chew88999.github.io/news-pulse/ (read-only, updated every 2 hours)
+
+## Public page (GitHub Pages)
+
+`.github/workflows/pages.yml` publishes a read-only copy of the page:
+
+- **Every 2 hours, or when run by hand** (Actions → *Publish public page* → *Run workflow*): it starts OpenCode on the GitHub runner, runs `npm run refresh`, and publishes the top three with `scripts/build-site.mjs`. If a refresh fails, the stories already online stay up.
+- **On a push that changes the page:** it only republishes the page, and no OpenCode Go usage is spent.
+- **What's not on the public page:** the day picker and "Check a link". Both spend AI usage, so anyone could run up your OpenCode Go allowance. They're available when you run the app yourself.
+- **Settings:** add the repository secret `OPENCODE_GO_API_KEY` (Settings → Secrets and variables → Actions). Optionally set the repository variable `OPENCODE_MODEL` (default `opencode-go/glm-5.3-flash`). Each refresh checks `MAX_VALIDATE` (8) articles, so 12 refreshes a day use about 96 checks of your Go allowance. Change the `cron` line in the workflow to refresh less often.
+
 ## How it works
 
 ```

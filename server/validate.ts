@@ -1,6 +1,7 @@
 import { createOpencodeClient } from "@opencode-ai/sdk/v2";
 import { Agent, setGlobalDispatcher } from "undici";
 import { z } from "zod";
+import { DAILY_AI_LIMIT, takeAiCheck } from "./limits.ts";
 import { Validation, type Candidate } from "./types.ts";
 
 // A validation can take several minutes while the agent fetches pages. Node's fetch gives up
@@ -49,6 +50,9 @@ function describeError(err: unknown): string {
 
 /** Asks the OpenCode news-validator agent to check one article. Throws if the agent fails or returns bad data. */
 export async function validateOne(candidate: Candidate): Promise<{ validation: Validation; model: string }> {
+  if (!takeAiCheck()) {
+    throw new AccountError(`Today's limit of ${DAILY_AI_LIMIT} AI checks has been reached, to protect the OpenCode Go allowance. Try again tomorrow.`);
+  }
   const oc = client();
   const session = await oc.session.create({ title: `validate: ${candidate.title.slice(0, 60)}` });
   if (!session.data) throw new Error(`could not create OpenCode session: ${describeError(session.error)}`);

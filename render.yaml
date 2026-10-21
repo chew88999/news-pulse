@@ -1,0 +1,24 @@
+# Render blueprint for the full interactive News Pulse app.
+# Deploy: https://render.com/deploy?repo=https://github.com/chew88999/news-pulse
+# Render asks for OPENCODE_GO_API_KEY during setup; it is stored by Render, not in this repo.
+services:
+  - type: web
+    name: news-pulse
+    runtime: docker
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: OPENCODE_GO_API_KEY
+        sync: false
+      - key: OPENCODE_MODEL
+        value: opencode-go/glm-5.3-flash
+      # Protects the Go allowance from public use: AI article checks per day, and
+      # button presses per visitor per hour.
+      - key: DAILY_AI_LIMIT
+        value: "120"
+      - key: RATE_CRAWLS_PER_HOUR
+        value: "3"
+      - key: RATE_CHECKS_PER_HOUR
+        value: "5"
+      - key: REFRESH_CRON
+        value: "0 */2 * * *"

@@ -1,0 +1,44 @@
+# Checks that the hosting container builds and starts: OpenCode comes up and the web
+# server answers. Uses a placeholder key and spends no OpenCode Go usage
+# (STARTUP_REFRESH=false and DAILY_AI_LIMIT=0).
+name: Container check
+
+on:
+  push:
+    branches: [main]
+    paths: ["Dockerfile", ".dockerignore", "package*.json", "server/**", "scripts/start-cloud.mjs", "web/**", ".opencode/**", "opencode.json", ".github/workflows/container.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-start:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: docker build -t news-pulse .
+
+      - name: Start the container
+        run: |
+          docker run -d --name np -p 10000:10000 \
+            -e OPENCODE_GO_API_KEY=placeholder-not-a-real-key \
+            -e STARTUP_REFRESH=false -e DAILY_AI_LIMIT=0 \
+            news-pulse
+          for i in $(seq 1 90); do
+            if curl -fsS -o /dev/null http://127.0.0.1:10000/; then echo "web server is up"; exit 0; fi
+            sleep 2
+          done
+          echo "container did not start"; docker logs np; exit 1
+
+      - name: Check the page and the guards
+        run: |
+          curl -fsS http://127.0.0.1:10000/ | grep -q 'id="day"'
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -H 'Origin: https://evil.example' -d '{}' http://127.0.0.1:10000/api/crawl)
+          test "$code" = 403
+          docker logs np
+
+      - if: always()
+        run: docker rm -f np || true

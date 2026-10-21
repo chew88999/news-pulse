@@ -1,12 +1,18 @@
 import { serve } from "@hono/node-server";
-import { Hono } from "hono";
+import { getConnInfo } from "@hono/node-server/conninfo";
+import { Hono, type Context } from "hono";
 import { readFile } from "node:fs/promises";
 import cron from "node-cron";
 import { getCheck, startCheck } from "./check.ts";
 import { parseWindow, type Window } from "./collector.ts";
+import { DAILY_AI_LIMIT, rateLimited } from "./limits.ts";
 import { loadSnapshot, refresh, refreshState } from "./pipeline.ts";
 
 const PORT = Number(process.env.PORT ?? 3000);
+// 127.0.0.1 keeps it on this computer; a hosting container sets HOST=0.0.0.0 to accept visitors.
+const HOST = process.env.HOST ?? "127.0.0.1";
+// Refresh on start when there is no snapshot yet. Set to "false" to wait for the schedule or a visitor.
+const STARTUP_REFRESH = process.env.STARTUP_REFRESH !== "false";
 const REFRESH_CRON = process.env.REFRESH_CRON ?? "0 */2 * * *";
 const INDEX_HTML = new URL("../web/index.html", import.meta.url);
 // News feeds only keep roughly the last week, so older days would come back empty.
@@ -40,13 +46,30 @@ app.get("/api/top3", async (c) => {
   return c.json({ status: "missing", window: window.label, error: state.error }, 404);
 });
 
-// Starts a crawl for one day. Only accepts JSON requests from this page's own origin, so
-// another website open in the browser can't trigger crawls (and spend OpenCode Go usage).
-app.post("/api/crawl", async (c) => {
+/**
+ * Checks for the buttons that spend OpenCode Go usage: only JSON requests from this page's own
+ * origin (so another website open in the browser can't trigger them), and a per-visitor rate limit.
+ * Returns an error response, or null to go ahead.
+ */
+function guard(c: Context, kind: "crawl" | "check"): Response | null {
   const origin = c.req.header("origin");
   if (!c.req.header("content-type")?.startsWith("application/json") || (origin && new URL(origin).host !== c.req.header("host"))) {
     return c.json({ error: "forbidden" }, 403);
   }
+  // Behind a hosting proxy the visitor's address is the first entry of X-Forwarded-For.
+  const ip = c.req.header("x-forwarded-for")?.split(",")[0].trim() || getConnInfo(c).remote.address || "unknown";
+  const wait = rateLimited(kind, ip);
+  if (wait > 0) {
+    c.header("Retry-After", String(wait));
+    return c.json({ error: `Too many requests from you. Try again in ${Math.ceil(wait / 60)} min.` }, 429);
+  }
+  return null;
+}
+
+// Starts a crawl for one day.
+app.post("/api/crawl", async (c) => {
+  const denied = guard(c, "crawl");
+  if (denied) return denied;
   const window = windowFrom(c.req.query("day"));
   if (typeof window === "string") return c.json({ error: window }, 400);
   refresh(window).catch((err) => console.error(`[crawl ${window.key}] failed:`, (err as Error).message));
@@ -55,10 +78,8 @@ app.post("/api/crawl", async (c) => {
 
 // "Check a link": POST { url } → 202 { id }, then poll GET /api/check/:id.
 app.post("/api/check", async (c) => {
-  const origin = c.req.header("origin");
-  if (!c.req.header("content-type")?.startsWith("application/json") || (origin && new URL(origin).host !== c.req.header("host"))) {
-    return c.json({ error: "forbidden" }, 403);
-  }
+  const denied = guard(c, "check");
+  if (denied) return denied;
   const body = await c.req.json().catch(() => ({}));
   if (typeof body?.url !== "string" || body.url.length > 2000) return c.json({ error: "Paste a link to check." }, 400);
   try {
@@ -77,9 +98,9 @@ cron.schedule(REFRESH_CRON, () => {
   refresh().catch((err) => console.error("[cron] refresh failed:", (err as Error).message));
 });
 
-serve({ fetch: app.fetch, port: PORT, hostname: "127.0.0.1" }, () => {
-  console.log(`News Pulse on http://127.0.0.1:${PORT} (refresh: "${REFRESH_CRON}")`);
+serve({ fetch: app.fetch, port: PORT, hostname: HOST }, () => {
+  console.log(`News Pulse on http://${HOST}:${PORT} (refresh: "${REFRESH_CRON}", AI checks/day: ${DAILY_AI_LIMIT})`);
 });
 
 // Fill the page on first start.
-if (!(await loadSnapshot())) refresh().catch((err) => console.error("[startup] refresh failed:", (err as Error).message));
+if (STARTUP_REFRESH && !(await loadSnapshot())) refresh().catch((err) => console.error("[startup] refresh failed:", (err as Error).message));

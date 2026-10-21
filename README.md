@@ -4,6 +4,31 @@ Shows IT and engineering staff the three defence and technology news items that 
 
 **Public page:** https://chew88999.github.io/news-pulse/ (read-only, updated every 2 hours)
 
+## Hosting the full app (date picker, crawl button, Check a link)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/chew88999/news-pulse)
+
+The button deploys the whole interactive app as one Docker container (`Dockerfile`, started by `scripts/start-cloud.mjs`, which runs OpenCode and the web server together), using the settings in `render.yaml`. Render asks for `OPENCODE_GO_API_KEY` during setup and stores it; it never goes in the repository.
+
+Because anyone can press the buttons that spend your OpenCode Go allowance, the hosted app has guards:
+
+| Guard | Default | Setting |
+|---|---|---|
+| AI article checks per day, for everyone combined | 120 on Render (150 locally) | `DAILY_AI_LIMIT` |
+| "Check news for…" presses per visitor per hour | 3 | `RATE_CRAWLS_PER_HOUR` |
+| "Check a link" submissions per visitor per hour | 5 | `RATE_CHECKS_PER_HOUR` |
+| Requests from other websites | refused | — |
+| Links or redirects to the server's own network | refused | — |
+
+Things to know about Render's free plan:
+
+- **Sleep:** the service sleeps after about 15 minutes with no visitors. The next visitor waits about a minute for it to wake.
+- **Usage on waking:** each wake-up starts with no saved news, so it runs one refresh (8 AI checks). Set `STARTUP_REFRESH=false` to wait for the schedule or a visitor's button press instead.
+- **Saved results:** results, including checked days, are lost when the service restarts.
+- **Upgrading:** a paid instance stays awake and keeps the 2-hourly schedule running.
+
+The **Container check** workflow builds and starts the container on every relevant push, with a placeholder key and no AI usage, to show it works before you deploy.
+
 ## Public page (GitHub Pages)
 
 `.github/workflows/pages.yml` publishes a read-only copy of the page:

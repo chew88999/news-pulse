@@ -48,11 +48,26 @@ async function checkUrl(raw: string): Promise<URL> {
 /** Best effort: the page's title, site name, date and description, so the result card has something to show. */
 async function pageInfo(url: URL): Promise<{ title?: string; site?: string; published?: string; description?: string }> {
   try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": "NewsPulse/0.1 (+internal news check)", Accept: "text/html" },
-      redirect: "follow",
-      signal: AbortSignal.timeout(10_000),
-    });
+    // Follow redirects one at a time and re-check each address, so a public link can't
+    // redirect the server to something on its own network.
+    let res: Response | undefined;
+    let next = url;
+    for (let hop = 0; hop < 5; hop++) {
+      res = await fetch(next, {
+        headers: { "User-Agent": "NewsPulse/0.1 (+internal news check)", Accept: "text/html" },
+        redirect: "manual",
+        signal: AbortSignal.timeout(10_000),
+      });
+      const location = res.status >= 300 && res.status < 400 ? res.headers.get("location") : null;
+      if (!location) break;
+      await res.body?.cancel();
+      try {
+        next = await checkUrl(new URL(location, next).href);
+      } catch (err) {
+        throw new BlockedRedirect(`The link redirects somewhere that can't be checked: ${(err as Error).message}`);
+      }
+    }
+    if (!res) return {};
     if (!res.ok || !res.headers.get("content-type")?.includes("html")) {
       await res.body?.cancel();
       return {};
@@ -69,10 +84,13 @@ async function pageInfo(url: URL): Promise<{ title?: string; site?: string; publ
       published: published && !Number.isNaN(new Date(published).getTime()) ? new Date(published).toISOString() : undefined,
       description: meta("og:description") ?? meta("description"),
     };
-  } catch {
+  } catch (err) {
+    if (err instanceof BlockedRedirect) throw err; // stop: don't hand this link to the agent either
     return {}; // the agent will still try to fetch the page itself
   }
 }
+
+class BlockedRedirect extends Error {}
 
 function decode(s: string): string {
   return s

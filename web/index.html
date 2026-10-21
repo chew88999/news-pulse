@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>News Pulse</title>
+  <style>
+    :root {
+      --bg: #f6f7f9; --card: #ffffff; --text: #16191d; --muted: #5d6670; --line: #e3e6ea;
+      --ok: #1f7a4d; --ok-bg: #e5f4ec; --warn: #8a5a00; --warn-bg: #fdf1d8; --bad: #a32020; --bad-bg: #fbe4e4;
+      --accent: #2556c9;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111417; --card: #1a1e23; --text: #e8eaed; --muted: #9aa3ad; --line: #2b3138;
+        --ok: #6fd3a0; --ok-bg: #173326; --warn: #f0c46a; --warn-bg: #3a2e14; --bad: #f08a8a; --bad-bg: #3d1c1c;
+        --accent: #8fb1ff;
+      }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    main { max-width: 760px; margin: 0 auto; padding: 32px 16px 48px; }
+    header h1 { margin: 0; font-size: 1.5rem; letter-spacing: -0.01em; }
+    header p { margin: 4px 0 24px; color: var(--muted); font-size: 0.9rem; }
+    ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
+    article { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+    .top { display: flex; gap: 12px; align-items: flex-start; }
+    .rank { flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; background: var(--bg); border: 1px solid var(--line); }
+    h2 { margin: 0; font-size: 1.1rem; line-height: 1.35; }
+    h2 a { color: inherit; text-decoration: none; }
+    h2 a:hover { text-decoration: underline; }
+    .meta { margin: 6px 0 0; color: var(--muted); font-size: 0.85rem; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
+    .verified { color: var(--ok); background: var(--ok-bg); }
+    .to_be_verified { color: var(--warn); background: var(--warn-bg); }
+    .likely_fake { color: var(--bad); background: var(--bad-bg); }
+    .summary { margin: 12px 0 0; }
+    .warn-note { margin: 10px 0 0; font-size: 0.85rem; color: var(--warn); }
+    details { margin-top: 12px; font-size: 0.875rem; color: var(--muted); }
+    summary { cursor: pointer; color: var(--accent); }
+    details ul { margin: 8px 0 0; padding-left: 20px; }
+    details a { color: var(--accent); word-break: break-all; }
+    .state { background: var(--card); border: 1px dashed var(--line); border-radius: 12px; padding: 24px; color: var(--muted); text-align: center; }
+    .state button { margin-top: 12px; }
+    footer { margin-top: 24px; color: var(--muted); font-size: 0.8rem; }
+    .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 20px; }
+    .controls label { font-size: 0.875rem; color: var(--muted); }
+    input[type="date"], button { font: inherit; font-size: 0.875rem; color: var(--text); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
+    input[type="date"] { color-scheme: light dark; }
+    button { cursor: pointer; }
+    button.primary { background: var(--accent); border-color: var(--accent); color: var(--card); font-weight: 600; }
+    button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+    .check { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--line); }
+    .check > h2 { font-size: 1.1rem; }
+    .hint { margin: 4px 0 12px; color: var(--muted); font-size: 0.875rem; }
+    .check-form { display: flex; gap: 8px; }
+    .check-form input { flex: 1; min-width: 0; font: inherit; font-size: 0.9rem; color: var(--text); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+    .check-form button:disabled { opacity: 0.6; cursor: wait; }
+    #check-result { margin-top: 16px; }
+    #check-result ol { list-style: none; padding: 0; margin: 0; }
+    .check-error { color: var(--bad); font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>News Pulse</h1>
+      <p id="updated">Top three defence and technology stories for IT and engineering staff</p>
+    </header>
+    <div class="controls">
+      <button id="latest" type="button" aria-pressed="true">Latest</button>
+      <label for="day">or pick a day</label>
+      <input id="day" type="date" />
+    </div>
+    <ol id="list"><li class="state">Loading…</li></ol>
+    <footer id="stats"></footer>
+
+    <section class="check" aria-labelledby="check-title">
+      <h2 id="check-title">Check a link</h2>
+      <p class="hint">Got an article from a colleague or a WhatsApp group? Paste its link to check whether it's authentic. Takes about a minute.</p>
+      <form id="check-form" class="check-form">
+        <input id="check-url" type="url" required placeholder="https://…" aria-label="Article link" autocomplete="off" />
+        <button class="primary" type="submit" id="check-btn">Check</button>
+      </form>
+      <div id="check-result" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script>
+    const LABELS = {
+      verified: "✅ Verified",
+      to_be_verified: "⚠️ To be verified",
+      likely_fake: "❌ Likely fake",
+    };
+
+    const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
+    const safeUrl = (u) => { try { const x = new URL(u); return /^https?:$/.test(x.protocol) ? x.href : "#"; } catch { return "#"; } };
+    const when = (iso) => new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+
+    function card(item, i) {
+      const v = item.validation;
+      const links = (v.corroborating_urls || []).map((u) => `<li><a href="${esc(safeUrl(u))}" target="_blank" rel="noopener noreferrer">${esc(u)}</a></li>`).join("");
+      const reasons = (v.reasons || []).map((r) => `<li>${esc(r)}</li>`).join("");
+      const flags = (v.red_flags || []).map((r) => `<li>${esc(r)}</li>`).join("");
+      return `
+        <li><article>
+          <div class="top">
+            ${i == null ? "" : `<div class="rank">${i + 1}</div>`}
+            <div>
+              <h2><a href="${esc(safeUrl(item.url))}" target="_blank" rel="noopener noreferrer">${esc(item.title)}</a></h2>
+              <div class="meta">
+                <span class="badge ${esc(v.verdict)}">${LABELS[v.verdict] || esc(v.verdict)}</span>
+                <span>${esc(item.source)} · tier ${esc(v.source_tier)}</span>
+                ${item.publishedAt ? `<span>${esc(when(item.publishedAt))}</span>` : ""}
+              </div>
+            </div>
+          </div>
+          <p class="summary">${esc(v.summary)}</p>
+          ${v.verdict !== "verified" ? `<p class="warn-note">Check the source yourself before acting on this.</p>` : ""}
+          <details>
+            <summary>Why this verdict (${Math.round(v.confidence * 100)}% sure)</summary>
+            ${reasons ? `<ul>${reasons}</ul>` : ""}
+            ${flags ? `<p><strong>Red flags</strong></p><ul>${flags}</ul>` : ""}
+            ${links ? `<p><strong>Also reported by</strong></p><ul>${links}</ul>` : "<p>No independent source found yet.</p>"}
+          </details>
+        </article></li>`;
+    }
+
+    const list = document.getElementById("list");
+    const updated = document.getElementById("updated");
+    const stats = document.getElementById("stats");
+    const dayInput = document.getElementById("day");
+    const latestBtn = document.getElementById("latest");
+    const MAX_DAYS_BACK = 7; // matches the server: feeds don't keep older news
+
+    const isoDay = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const today = new Date();
+    dayInput.max = isoDay(today);
+    dayInput.min = isoDay(new Date(today.getFullYear(), today.getMonth(), today.getDate() - MAX_DAYS_BACK));
+
+    let day = new URLSearchParams(location.search).get("day") || "";
+    let pollTimer;
+    let requestId = 0;
+
+    function setDay(value) {
+      day = value;
+      dayInput.value = day;
+      latestBtn.setAttribute("aria-pressed", String(!day));
+      history.replaceState(null, "", day ? `?day=${day}` : location.pathname);
+      load();
+    }
+    dayInput.addEventListener("change", () => setDay(dayInput.value));
+    latestBtn.addEventListener("click", () => setDay(""));
+
+    function showState(html) {
+      list.innerHTML = `<li class="state">${html}</li>`;
+      stats.textContent = "";
+    }
+
+    async function crawl() {
+      showState("Starting…");
+      const res = await fetch(`/api/crawl${day ? `?day=${day}` : ""}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        showState(esc(data.error || res.statusText));
+        return;
+      }
+      load();
+    }
+
+    async function load() {
+      clearTimeout(pollTimer);
+      const id = ++requestId; // ignore answers for a day the user has already left
+      try {
+        const res = await fetch(`/api/top3${day ? `?day=${day}` : ""}`);
+        const data = await res.json();
+        if (id !== requestId) return;
+        updated.textContent = data.window ? `News from ${data.window}` : "Top three defence and technology stories for IT and engineering staff";
+
+        if (res.status === 202) {
+          showState(`Checking the news for ${esc(data.window)}… this takes about 3 minutes. The page updates by itself.`);
+          pollTimer = setTimeout(load, 5000);
+          return;
+        }
+        if (res.status === 404) {
+          const why = data.error ? `The last check failed: ${esc(data.error)}` : `${esc(data.window)} hasn't been checked yet.`;
+          showState(`${why}<br><button class="primary" type="button" id="crawl">Check news for ${esc(data.window)}</button>`);
+          document.getElementById("crawl").addEventListener("click", crawl);
+          return;
+        }
+        if (!res.ok) throw new Error(data.error || res.statusText);
+
+        list.innerHTML = data.items.length ? data.items.map(card).join("") : `<li class="state">No stories passed the checks for ${esc(data.window)}.</li>`;
+        updated.textContent = `News from ${data.window ?? "the last 48h"} · updated ${when(data.generatedAt)}`;
+        const s = data.stats;
+        stats.textContent =
+          `${s.collected} articles collected · ${s.validated} checked by the agent · ${s.rejectedAsFake} rejected as likely fake` + (s.failed ? ` · ${s.failed} could not be checked` : "");
+      } catch (err) {
+        if (id === requestId) showState(esc(err.message));
+      }
+    }
+    setDay(day);
+
+    // "Check a link"
+    const checkForm = document.getElementById("check-form");
+    const checkUrl = document.getElementById("check-url");
+    const checkBtn = document.getElementById("check-btn");
+    const checkResult = document.getElementById("check-result");
+    let checkTimer;
+
+    function checkBusy(busy) {
+      checkBtn.disabled = busy;
+      checkUrl.disabled = busy;
+      checkBtn.textContent = busy ? "Checking…" : "Check";
+    }
+
+    function showCheck(c) {
+      if (c.status === "running") {
+        const secs = Math.round((Date.now() - new Date(c.startedAt)) / 1000);
+        checkResult.innerHTML = `<div class="state">Checking ${esc(c.url)}… (${secs}s)<br>The agent is reading the page and looking for other sources.</div>`;
+        checkTimer = setTimeout(() => pollCheck(c.id), 3000);
+        return;
+      }
+      checkBusy(false);
+      checkResult.innerHTML = c.status === "done"
+        ? `<ol>${card(c.item, null)}</ol>`
+        : `<p class="check-error">Couldn't check that link: ${esc(c.error)}</p>`;
+    }
+
+    async function pollCheck(id) {
+      try {
+        const res = await fetch(`/api/check/${encodeURIComponent(id)}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || res.statusText);
+        showCheck(data);
+      } catch (err) {
+        checkBusy(false);
+        checkResult.innerHTML = `<p class="check-error">${esc(err.message)}</p>`;
+      }
+    }
+
+    checkForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      clearTimeout(checkTimer);
+      checkBusy(true);
+      checkResult.innerHTML = "";
+      try {
+        const res = await fetch("/api/check", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: checkUrl.value }) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || res.statusText);
+        showCheck(data);
+      } catch (err) {
+        checkBusy(false);
+        checkResult.innerHTML = `<p class="check-error">${esc(err.message)}</p>`;
+      }
+    });
+  </script>
+</body>
+</html>

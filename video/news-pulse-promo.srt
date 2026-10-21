@@ -1,0 +1,67 @@
+1
+00:00:00,718 --> 00:00:03,437
+Defence and tech news reaches you from everywhere:
+
+2
+00:00:03,437 --> 00:00:06,275
+news sites, colleagues, and the group chat.
+
+3
+00:00:07,514 --> 00:00:10,094
+Which of it is true? Which of it matters?
+
+4
+00:00:10,094 --> 00:00:12,800
+Sorting it out by hand can take hours.
+
+5
+00:00:14,108 --> 00:00:18,024
+Meet News Pulse. The three stories that matter, checked.
+
+6
+00:00:19,706 --> 00:00:23,199
+It collects news from trusted defence and technology sources.
+
+7
+00:00:23,199 --> 00:00:27,323
+An AI agent checks every story against independent and official sources.
+
+8
+00:00:27,323 --> 00:00:30,171
+And only the three that matter reach you.
+
+9
+00:00:31,905 --> 00:00:34,008
+Every story comes with a clear verdict,
+
+10
+00:00:34,008 --> 00:00:36,987
+a two-line summary, and the reasons behind it.
+
+11
+00:00:41,619 --> 00:00:46,190
+Got a forwarded link? Paste it in, and News Pulse checks it for you.
+
+12
+00:00:46,643 --> 00:00:48,368
+This one? Likely fake.
+
+13
+00:00:48,368 --> 00:00:50,514
+And it tells you why.
+
+14
+00:00:51,606 --> 00:00:53,893
+It caught every planted fake in our tests.
+
+15
+00:00:53,893 --> 00:00:56,900
+And it shows its reasoning, so you make the call.
+
+16
+00:00:57,908 --> 00:01:01,126
+News Pulse. Three stories. Checked.
+
+17
+00:01:01,126 --> 00:01:03,300
+In minutes, not hours.

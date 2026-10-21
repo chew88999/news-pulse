@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>News Pulse Promo</title>
+<style>
+  :root {
+    --bg: #0a0f1c; --panel: #121a2b; --panel-2: #18223a; --line: #26324d;
+    --text: #e9eef7; --muted: #94a3bb; --accent: #6ea8ff; --accent-2: #3dd6c6;
+    --ok: #4ade80; --ok-bg: #12301f; --warn: #fbbf24; --warn-bg: #3a2c0c; --bad: #f87171; --bad-bg: #3d1717;
+    --chat: #1d2a24; --chat-me: #22324f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #000; height: 100%; overflow: hidden; }
+  body { display: grid; place-items: center; font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif; color: var(--text); }
+  #stage {
+    position: relative; width: 1920px; height: 1080px; overflow: hidden; flex: none;
+    background:
+      radial-gradient(1200px 700px at 80% -10%, rgba(110,168,255,0.16), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, rgba(61,214,198,0.10), transparent 60%),
+      var(--bg);
+    transform-origin: center;
+  }
+  #stage::before { /* faint grid */
+    content: ""; position: absolute; inset: 0; opacity: 0.35;
+    background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 80px 80px; mask-image: radial-gradient(ellipse at center, #000 20%, transparent 75%);
+  }
+  .scene { position: absolute; inset: 0; padding: 110px 140px; opacity: 0; }
+  [data-in] { opacity: 0; will-change: opacity, transform; }
+  .center { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+
+  h1, .big { font-weight: 700; letter-spacing: -0.02em; line-height: 1.08; }
+  .kicker { color: var(--accent); font-weight: 600; font-size: 26px; letter-spacing: 0.14em; text-transform: uppercase; }
+  .muted { color: var(--muted); }
+
+  /* Scene 1: chat */
+  .s1 { display: grid; grid-template-columns: 760px 1fr; gap: 120px; align-items: center; padding-top: 70px; padding-bottom: 150px; }
+  .phone { background: var(--panel); border: 1px solid var(--line); border-radius: 36px; padding: 24px 28px; height: 800px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 40px 120px rgba(0,0,0,0.5); overflow: hidden; }
+  .phone-head { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; margin-bottom: 4px; border-bottom: 1px solid var(--line); }
+  .avatar { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, #3b4b6b, #26324d); display: grid; place-items: center; font-weight: 700; font-size: 22px; color: var(--muted); }
+  .phone-head b { font-size: 26px; display: block; }
+  .phone-head span { font-size: 20px; color: var(--muted); }
+  .bubble { max-width: 600px; background: var(--chat); border-radius: 20px 20px 20px 6px; padding: 12px 20px; font-size: 23px; line-height: 1.28; }
+  .bubble .who { font-size: 18px; font-weight: 700; color: var(--accent-2); margin-bottom: 4px; }
+  .bubble .fwd { font-size: 17px; color: var(--muted); font-style: italic; margin-bottom: 6px; }
+  .bubble .link { margin-top: 10px; padding: 10px 14px; border-left: 4px solid var(--accent); background: rgba(255,255,255,0.04); border-radius: 8px; font-size: 20px; color: var(--muted); }
+  .bubble .link b { color: var(--text); display: block; font-size: 21px; }
+  .unread { font-size: 150px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
+  .unread small { display: block; font-size: 40px; font-weight: 600; color: var(--muted); letter-spacing: 0; margin-top: 12px; }
+  .clock { font-size: 34px; color: var(--muted); font-weight: 600; margin-bottom: 18px; font-variant-numeric: tabular-nums; }
+  .caption { font-size: 46px; font-weight: 600; line-height: 1.2; margin-top: 60px; max-width: 760px; }
+
+  /* Scene 2 */
+  .s2 .big { font-size: 112px; }
+  .s2 .big + .big { margin-top: 18px; }
+  .s2 .note { margin-top: 70px; font-size: 40px; color: var(--muted); }
+  .s2 .note b { color: var(--warn); }
+
+  /* Logo */
+  .logo { display: flex; align-items: center; gap: 34px; }
+  .logo svg { width: 230px; height: 110px; overflow: visible; }
+  .logo .word { font-size: 132px; font-weight: 800; letter-spacing: -0.035em; }
+  .tagline { font-size: 52px; color: var(--muted); margin-top: 34px; font-weight: 500; }
+  .tagline b { color: var(--text); }
+
+  /* Scene 4: steps */
+  .s4 { padding-top: 170px; }
+  .s4 h1 { font-size: 72px; margin: 18px 0 80px; }
+  .steps { display: grid; grid-template-columns: 1fr 90px 1fr 90px 1fr; align-items: stretch; }
+  .step { background: var(--panel); border: 1px solid var(--line); border-radius: 28px; padding: 46px 42px; }
+  .step .ico { width: 92px; height: 92px; border-radius: 24px; background: var(--panel-2); display: grid; place-items: center; margin-bottom: 34px; }
+  .step .ico svg { width: 52px; height: 52px; stroke: var(--accent); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .step .num { color: var(--accent); font-weight: 700; font-size: 24px; letter-spacing: 0.12em; }
+  .step h2 { font-size: 54px; margin: 8px 0 18px; letter-spacing: -0.02em; }
+  .step p { font-size: 30px; line-height: 1.35; color: var(--muted); }
+  .arrow { display: grid; place-items: center; }
+  .arrow svg { width: 60px; height: 60px; stroke: var(--line); stroke-width: 3; fill: none; }
+
+  /* Scene 5: app */
+  .s5 { display: grid; grid-template-columns: 900px 1fr; gap: 110px; align-items: start; padding-top: 70px; padding-bottom: 150px; }
+  .s5 > div:last-child { padding-top: 60px; }
+  .browser { background: #f5f6f8; border-radius: 24px; overflow: hidden; height: 840px; box-shadow: 0 50px 140px rgba(0,0,0,0.55); border: 1px solid #2b3550; }
+  .browser .bar { height: 56px; background: #e6e9ef; display: flex; align-items: center; gap: 10px; padding: 0 20px; }
+  .browser .dot { width: 14px; height: 14px; border-radius: 50%; background: #c5cad4; }
+  .browser .url { margin-left: 18px; flex: 1; height: 34px; border-radius: 17px; background: #fff; color: #5d6670; font-size: 18px; display: flex; align-items: center; padding: 0 18px; }
+  .browser .view { height: calc(100% - 56px); overflow: hidden; }
+  .browser img { width: 100%; display: block; transform-origin: 50% 0; }
+  .s5 h1 { font-size: 66px; margin: 16px 0 56px; }
+  .callout { display: flex; gap: 26px; align-items: flex-start; margin-bottom: 44px; }
+  .chip { flex: none; min-width: 64px; height: 64px; border-radius: 18px; display: grid; place-items: center; font-size: 32px; font-weight: 700; }
+  .callout h3 { font-size: 40px; letter-spacing: -0.01em; }
+  .callout p { font-size: 28px; color: var(--muted); margin-top: 6px; line-height: 1.35; }
+  .ok { background: var(--ok-bg); color: var(--ok); } .warn { background: var(--warn-bg); color: var(--warn); } .bad { background: var(--bad-bg); color: var(--bad); }
+  .blue { background: #16264a; color: var(--accent); }
+
+  /* Scene 6: check a link */
+  .s6 h1 { font-size: 76px; margin-bottom: 60px; }
+  .s6 .row { display: grid; grid-template-columns: 560px 100px 1fr; align-items: start; }
+  .s6 .bubble { max-width: none; font-size: 26px; }
+  .checker { position: relative; background: #f5f6f8; color: #16191d; border-radius: 26px; padding: 40px; box-shadow: 0 40px 120px rgba(0,0,0,0.5); }
+  .checker h4 { font-size: 30px; margin-bottom: 18px; }
+  .checker .input { display: flex; gap: 14px; }
+  .checker .field { flex: 1; background: #fff; border: 2px solid #d5d9e0; border-radius: 12px; padding: 14px 18px; font-size: 22px; color: #16191d; font-family: Consolas, "Cascadia Mono", monospace; white-space: nowrap; overflow: hidden; min-height: 60px; }
+  .checker .btn { background: #2556c9; color: #fff; border-radius: 12px; padding: 14px 28px; font-size: 24px; font-weight: 700; }
+  .checking { position: absolute; left: 40px; top: 172px; font-size: 24px; color: #5d6670; display: flex; align-items: center; gap: 14px; }
+  .spinner { width: 26px; height: 26px; border-radius: 50%; border: 4px solid #d5d9e0; border-top-color: #2556c9; }
+  .result { position: relative; margin-top: 26px; background: #fff; border: 1px solid #e3e6ea; border-radius: 18px; padding: 28px 30px; }
+  .result h5 { font-size: 28px; line-height: 1.25; }
+  .result .meta { display: flex; gap: 16px; align-items: center; margin-top: 12px; font-size: 21px; color: #5d6670; }
+  .badge-fake { background: #fbe4e4; color: #a32020; font-weight: 700; border-radius: 999px; padding: 4px 16px; font-size: 22px; }
+  .flags { margin-top: 18px; font-size: 22px; color: #3d4450; }
+  .flags b { display: block; margin-bottom: 8px; color: #16191d; }
+  .flags li { list-style: none; padding-left: 30px; position: relative; margin-bottom: 8px; }
+  .flags li::before { content: "⚑"; position: absolute; left: 0; color: #a32020; }
+
+  /* Scene 7 */
+  .s7 { padding-top: 210px; }
+  .s7 h1 { font-size: 72px; margin: 16px 0 70px; }
+  .proof .chip svg { width: 48px; height: 48px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .proof { display: flex; gap: 34px; align-items: center; margin-bottom: 46px; }
+  .proof .chip { width: 96px; height: 96px; border-radius: 26px; font-size: 46px; }
+  .proof h3 { font-size: 50px; letter-spacing: -0.015em; }
+  .proof p { font-size: 30px; color: var(--muted); margin-top: 6px; }
+
+  /* Scene 8 */
+  .s8 .tagline { font-size: 64px; color: var(--text); font-weight: 700; letter-spacing: -0.02em; }
+  .s8 .sub { margin-top: 30px; font-size: 36px; color: var(--muted); }
+  /* Burned-in subtitles (text from subtitles.js) */
+  #subtitle { position: absolute; left: 0; right: 0; margin: 0 auto; width: fit-content; bottom: 36px; max-width: 1600px; z-index: 10;
+    background: rgba(4, 7, 14, 0.82); color: #fff; font-size: 38px; font-weight: 600; line-height: 1.3; text-align: center;
+    padding: 10px 26px 12px; border-radius: 12px; opacity: 0; box-shadow: 0 8px 30px rgba(0,0,0,0.35); }
+  .s8 .rule { width: 160px; height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); margin: 48px auto 0; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- 1. Overload -->
+  <section class="scene s1" data-in="0" data-out="7000" data-fx="none">
+    <div class="phone" data-in="0" data-fx="up" data-dur="700">
+      <div class="phone-head">
+        <div class="avatar">EO</div>
+        <div><b>Eng-Ops team</b><span>14 participants</span></div>
+      </div>
+      <div class="bubble" data-in="500" data-fx="pop"><div class="who">Team lead</div>Need a view on this before the 10:00 stand-up</div>
+      <div class="bubble" data-in="1200" data-fx="pop">
+        <div class="fwd">↪ Forwarded many times</div>
+        URGENT: China cyberattack has disabled navigation on every US Navy ship
+      </div>
+      <div class="bubble" data-in="1900" data-fx="pop"><div class="who">Colleague</div>Did you see this?! 👀
+        <div class="link"><b>Pentagon confirms quantum radar makes all stealth aircraft obsolete</b>defensenews-daily…</div>
+      </div>
+      <div class="bubble" data-in="2700" data-fx="pop"><div class="who">Programme office</div>Is the Army really dropping all its cloud contracts?</div>
+      <div class="bubble" data-in="3400" data-fx="pop"><div class="fwd">↪ Forwarded</div>Old SolarWinds story going round again?</div>
+    </div>
+    <div>
+      <div class="clock" data-in="300" data-fx="fade">08:47</div>
+      <div class="unread" data-in="300" data-fx="fade"><span data-count="214" data-count-in="400" data-count-dur="4200">0</span><small>unread messages</small></div>
+      <p class="caption" data-in="4300" data-fx="up">Defence and tech news reaches you from everywhere.</p>
+    </div>
+  </section>
+
+  <!-- 2. The problem -->
+  <section class="scene s2 center" data-in="7000" data-out="13000">
+    <p class="big" data-in="7300" data-fx="up">Which of it is true?</p>
+    <p class="big" data-in="8700" data-fx="up">Which of it matters to you?</p>
+    <p class="note" data-in="10300" data-fx="up">Sorting it out by hand: <b>more than 3 hours.</b></p>
+  </section>
+
+  <!-- 3. Logo -->
+  <section class="scene s3 center" data-in="13000" data-out="19000">
+    <div class="logo">
+      <svg viewBox="0 0 230 110" aria-hidden="true">
+        <defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#6ea8ff"/><stop offset="1" stop-color="#3dd6c6"/></linearGradient></defs>
+        <path data-draw data-in="13200" data-dur="1400" d="M4 58 H62 L80 14 L102 98 L124 34 L138 58 H226" stroke="url(#g)" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="word" data-in="14200" data-fx="left" data-dur="800">News Pulse</span>
+    </div>
+    <p class="tagline" data-in="15300" data-fx="up">The three stories that matter. <b>Checked.</b></p>
+  </section>
+
+  <!-- 4. How it works -->
+  <section class="scene s4" data-in="19000" data-out="31000">
+    <p class="kicker" data-in="19200" data-fx="fade">How it works</p>
+    <h1 data-in="19400" data-fx="up">From hundreds of headlines to three you can trust.</h1>
+    <div class="steps">
+      <div class="step" data-in="20000" data-fx="up">
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1.4"/></svg></div>
+        <div class="num">STEP 1</div><h2>Collect</h2>
+        <p>Official defence releases and specialist defence and technology press, refreshed every 2 hours.</p>
+      </div>
+      <div class="arrow" data-in="21700" data-fx="fade"><svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6"/></svg></div>
+      <div class="step" data-in="22300" data-fx="up">
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6l8-3z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></div>
+        <div class="num">STEP 2</div><h2>Verify</h2>
+        <p>An AI agent reads each article and looks for independent and official sources that back it up.</p>
+      </div>
+      <div class="arrow" data-in="24400" data-fx="fade"><svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6"/></svg></div>
+      <div class="step" data-in="25000" data-fx="up">
+        <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 20V13h4v7M10 20V8h4v12M16 20v-9h4v9"/></svg></div>
+        <div class="num">STEP 3</div><h2>Rank</h2>
+        <p>Only the three stories that matter most to engineers reach your screen.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. The product -->
+  <section class="scene s5" data-in="31000" data-out="41000">
+    <div class="browser" data-in="31100" data-fx="up" data-dur="800">
+      <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">News Pulse</span></div>
+      <div class="view"><img src="assets/app-top3.png" alt="" data-kb="1,1,0,-150" data-kb-in="31000" data-kb-out="41000" /></div>
+    </div>
+    <div>
+      <p class="kicker" data-in="31600" data-fx="fade">Your morning, sorted</p>
+      <h1 data-in="31800" data-fx="up">Every story checked and explained.</h1>
+      <div class="callout" data-in="33200" data-fx="left">
+        <div class="chip ok">✓</div>
+        <div><h3>Verdict at a glance</h3><p>Verified, to be verified, or likely fake.</p></div>
+      </div>
+      <div class="callout" data-in="34900" data-fx="left">
+        <div class="chip blue">≡</div>
+        <div><h3>Two-line summary</h3><p>What happened, and why an engineer should care.</p></div>
+      </div>
+      <div class="callout" data-in="36600" data-fx="left">
+        <div class="chip warn">?</div>
+        <div><h3>Reasons you can check</h3><p>Sources, corroboration and red flags, one click away.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Check a link -->
+  <section class="scene s6" data-in="41000" data-out="51000">
+    <p class="kicker" data-in="41100" data-fx="fade">Check a link</p>
+    <h1 data-in="41300" data-fx="up">Got a forwarded link? Paste it in.</h1>
+    <div class="row">
+      <div class="bubble" data-in="41900" data-fx="pop">
+        <div class="fwd">↪ Forwarded many times</div>
+        URGENT: China cyberattack has disabled navigation on every US Navy ship. Pentagon is hiding it. Share before it's deleted!!
+      </div>
+      <div class="arrow" data-in="42600" data-fx="fade"><svg viewBox="0 0 24 24" style="stroke: var(--muted)"><path d="M5 12h13M13 6l6 6-6 6"/></svg></div>
+      <div class="checker" data-in="42800" data-fx="up">
+        <h4>Check a link</h4>
+        <div class="input">
+          <div class="field"><span data-type="https://forwarded-messages.example/whatsapp/8812" data-in="43300" data-dur="1500" data-fx="none"></span></div>
+          <div class="btn">Check</div>
+        </div>
+        <div class="checking" data-in="45000" data-out="46300" data-fx="fade" data-dur="300"><span class="spinner" data-spin></span>The agent is reading the page and looking for other sources…</div>
+        <div class="result" data-in="46300" data-fx="pop">
+          <h5>URGENT: China cyberattack has disabled navigation on every US Navy ship</h5>
+          <div class="meta"><span class="badge-fake">❌ Likely fake</span><span>Forwarded WhatsApp message · tier 4 · 95% sure</span></div>
+          <ul class="flags">
+            <b>Red flags</b>
+            <li data-in="47100" data-fx="left">Only anonymous sources, with nothing official to back them</li>
+            <li data-in="47600" data-fx="left">Urgency and conspiracy framing (“Pentagon is hiding it”)</li>
+            <li data-in="48100" data-fx="left">The claim appears only on social media</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. Trust -->
+  <section class="scene s7" data-in="51000" data-out="57000">
+    <p class="kicker" data-in="51100" data-fx="fade">Built for people who check their facts</p>
+    <h1 data-in="51300" data-fx="up">Trust it because you can check it.</h1>
+    <div class="proof" data-in="52000" data-fx="left">
+      <div class="chip bad">⚑</div>
+      <div><h3>Caught every planted fake in our tests</h3><p>Lookalike sites, recycled stories, even a real link with altered facts.</p></div>
+    </div>
+    <div class="proof" data-in="53300" data-fx="left">
+      <div class="chip blue">◉</div>
+      <div><h3>Shows its reasoning</h3><p>Every verdict comes with sources and red flags. You make the call.</p></div>
+    </div>
+    <div class="proof" data-in="54600" data-fx="left">
+      <div class="chip ok"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+      <div><h3>Read-only AI</h3><p>The agent can read the web. It can't change anything.</p></div>
+    </div>
+  </section>
+
+  <!-- 8. End card -->
+  <section class="scene s8 center" data-in="57000" data-out="99999">
+    <div class="logo" data-in="57200" data-fx="pop" data-dur="800">
+      <svg viewBox="0 0 230 110" aria-hidden="true">
+        <path data-draw data-in="57200" data-dur="1100" d="M4 58 H62 L80 14 L102 98 L124 34 L138 58 H226" stroke="url(#g)" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="word">News Pulse</span>
+    </div>
+    <p class="tagline" data-in="58300" data-fx="up">Three stories. Checked. Minutes, not hours.</p>
+    <p class="sub" data-in="59300" data-fx="up">For IT and engineering teams in defence.</p>
+    <div class="rule" data-in="59900" data-fx="fade"></div>
+  </section>
+
+  <div id="subtitle" aria-live="off"></div>
+</div>
+<script src="subtitles.js"></script>
+
+<script>
+  // A tiny deterministic timeline: seek(ms) sets every element's state for that moment,
+  // so the video renders identically frame by frame. Open the file normally to preview it.
+  const DURATION = 64500;
+  const SUBS = window.SUBTITLES || [];
+  const subtitle = document.getElementById("subtitle");
+  const els = [...document.querySelectorAll("[data-in]")];
+  const clamp = (x) => Math.max(0, Math.min(1, x));
+  const ease = (t) => 1 - Math.pow(1 - t, 3);
+  const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+  for (const p of document.querySelectorAll("[data-draw]")) {
+    const len = p.getTotalLength();
+    p.style.strokeDasharray = len;
+    p.dataset.len = len;
+  }
+
+  function seek(t) {
+    for (const el of els) {
+      const tin = +el.dataset.in;
+      const tout = el.dataset.out ? +el.dataset.out : Infinity;
+      const dur = +(el.dataset.dur || (el.classList.contains("scene") ? 500 : 650));
+      const p = ease(clamp((t - tin) / dur));
+      const q = clamp((t - tout) / Math.min(dur, 500));
+      const fx = el.dataset.fx || "fade";
+
+      if (el.hasAttribute("data-draw")) {
+        el.style.strokeDashoffset = el.dataset.len * (1 - easeInOut(clamp((t - tin) / dur)));
+        el.style.opacity = t >= tin ? 1 : 0;
+        continue;
+      }
+      if (el.hasAttribute("data-type")) {
+        const text = el.dataset.type;
+        el.textContent = text.slice(0, Math.round(text.length * clamp((t - tin) / dur)));
+        el.style.opacity = 1;
+        continue;
+      }
+      el.style.opacity = p * (1 - q);
+      let tr = "";
+      if (fx === "up") tr = `translateY(${(1 - p) * 40 - q * 20}px)`;
+      else if (fx === "left") tr = `translateX(${(1 - p) * -50}px)`;
+      else if (fx === "pop") tr = `scale(${0.88 + 0.12 * p})`;
+      else if (fx === "none" || fx === "fade") tr = "";
+      if (el.classList.contains("scene")) tr = `scale(${1 + q * 0.03})`;
+      el.style.transform = tr;
+    }
+    for (const el of document.querySelectorAll("[data-count]")) {
+      const p = easeInOut(clamp((t - +el.dataset.countIn) / +el.dataset.countDur));
+      el.textContent = Math.round(+el.dataset.count * p);
+    }
+    for (const el of document.querySelectorAll("[data-kb]")) {
+      const [s0, s1, y0, y1] = el.dataset.kb.split(",").map(Number);
+      const p = easeInOut(clamp((t - +el.dataset.kbIn) / (+el.dataset.kbOut - +el.dataset.kbIn)));
+      el.style.transform = `translateY(${y0 + (y1 - y0) * p}px) scale(${s0 + (s1 - s0) * p})`;
+    }
+    for (const el of document.querySelectorAll("[data-spin]")) el.style.transform = `rotate(${(t * 0.6) % 360}deg)`;
+
+    const sub = SUBS.find((s) => t >= s.start && t < s.end);
+    if (sub) {
+      if (subtitle.textContent !== sub.text) subtitle.textContent = sub.text;
+      // Quick fade at the start and end of each caption run (not between back-to-back captions).
+      const prevGap = !SUBS.some((s) => s !== sub && Math.abs(s.end - sub.start) < 50);
+      const nextGap = !SUBS.some((s) => s !== sub && Math.abs(s.start - sub.end) < 50);
+      const fin = prevGap ? clamp((t - sub.start) / 150) : 1;
+      const fout = nextGap ? clamp((sub.end - t) / 150) : 1;
+      subtitle.style.opacity = Math.min(fin, fout);
+    } else {
+      subtitle.style.opacity = 0;
+    }
+  }
+  window.__seek = seek;
+  window.__duration = DURATION;
+
+  const stage = document.getElementById("stage");
+  const render = new URLSearchParams(location.search).has("render");
+  if (!render) {
+    const fit = () => stage.style.transform = `scale(${Math.min(innerWidth / 1920, innerHeight / 1080)})`;
+    addEventListener("resize", fit); fit();
+    let start = performance.now();
+    const tick = (now) => { const t = (now - start) % (DURATION + 1500); seek(Math.min(t, DURATION)); requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  } else {
+    seek(0);
+  }
+</script>
+</body>
+</html>

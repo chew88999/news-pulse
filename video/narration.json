@@ -1,0 +1,15 @@
+{
+  "voice": "Mark",
+  "rate": 1.0,
+  "lines": [
+    { "id": "01", "start": 600,   "end": 6900,  "text": "Defence and tech news reaches you from everywhere: news sites, colleagues, and the group chat." },
+    { "id": "02", "start": 7400,  "end": 12800, "text": "Which of it is true? Which of it matters? Sorting it out by hand can take hours." },
+    { "id": "03", "start": 14000, "end": 18800, "text": "Meet News Pulse. The three stories that matter, checked." },
+    { "id": "04", "start": 19600, "end": 30700, "text": "It collects news from trusted defence and technology sources. An AI agent checks every story against independent and official sources. And only the three that matter reach you." },
+    { "id": "05", "start": 31800, "end": 40700, "text": "Every story comes with a clear verdict, a two-line summary, and the reasons behind it." },
+    { "id": "06", "start": 41500, "end": 46200, "text": "Got a forwarded link? Paste it in, and News Pulse checks it for you." },
+    { "id": "07", "start": 46500, "end": 50800, "text": "This one? Likely fake. And it tells you why." },
+    { "id": "08", "start": 51500, "end": 56900, "text": "It caught every planted fake in our tests. And it shows its reasoning, so you make the call." },
+    { "id": "09", "start": 57800, "end": 63300, "text": "News Pulse. Three stories. Checked. In minutes, not hours." }
+  ]
+}

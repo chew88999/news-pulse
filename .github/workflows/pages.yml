@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["web/**", "scripts/build-site.mjs", ".github/workflows/pages.yml"]
+    paths: ["web/**", "scripts/build-site.mjs", ".github/workflows/pages.yml", "video/news-pulse-promo.*"]
 
 permissions:
   contents: read

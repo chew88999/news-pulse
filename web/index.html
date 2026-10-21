@@ -148,7 +148,7 @@
     if (STATIC) {
       document.querySelector(".controls").hidden = true;
       document.querySelector(".check").innerHTML =
-        `<p class="hint">This public page is read-only and updates every 2 hours. To pick a day or check a link yourself, run News Pulse from <a href="https://github.com/chew88999/news-pulse">its GitHub repository</a>.</p>`;
+        `<p class="hint">This public page is read-only and updates every 2 hours. To pick a day or check a link yourself, run News Pulse from <a href="https://github.com/chew88999/news-pulse">its GitHub repository</a>. New here? <a href="video.html">Watch the one-minute video</a>.</p>`;
     }
 
     let day = STATIC ? "" : new URLSearchParams(location.search).get("day") || "";
